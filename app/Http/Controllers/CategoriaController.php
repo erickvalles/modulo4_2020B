@@ -47,7 +47,7 @@ class CategoriaController extends Controller
      */
     public function show(Categoria $categoria)
     {
-        
+        return $categoria;
         $productos = $categoria->productos;
         return view('categorias.show',compact('categoria','productos'));
     }
@@ -83,6 +83,6 @@ class CategoriaController extends Controller
      */
     public function destroy(Categoria $categoria)
     {
-        //
+        return $categoria;
     }
 }

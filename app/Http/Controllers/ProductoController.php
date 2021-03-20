@@ -2,14 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\ProductoCreado;
 use App\Http\Requests\CrearProductoRequest;
 use App\Models\Categoria;
 use App\Models\Producto;
 use App\Models\Tienda;
+use App\Repositories\ProductosRepository;
 use Illuminate\Http\Request;
 
 class ProductoController extends Controller
 {
+    private $productos;
+
+    public function __construct(ProductosRepository $productosRepository){
+
+        $this->productos = $productosRepository;
+
+    }
     /**
      * Display a listing of the resource.
      *
@@ -17,9 +26,7 @@ class ProductoController extends Controller
      */
     public function index()
     {
-        $productos = Producto::with('categoria')->get();
-
-        //dd($productos);
+        $productos = $this->productos->productosConCategorias();
         
         return view('productos.index',compact('productos'));
     }
@@ -44,14 +51,9 @@ class ProductoController extends Controller
      */
     public function store(CrearProductoRequest $request)
     {
-        Producto::create($request->only(
-            ['nombre',
-            'descipcion',
-            'precio',
-            'categoria_id',
-            'stock'])
-        );
+        $producto = $this->productos->crearProducto($request);
         
+        event(new ProductoCreado($producto));
 
         return redirect()->route('productos.index');
     }
@@ -94,19 +96,13 @@ class ProductoController extends Controller
      */
     public function update(Request $request, Producto $producto)
     {
-        $producto->fill($request->only(['nombre',
-        'descipcion',
-        'precio',
-        'categoria_id',
-        'stock']));
-        
-        if($producto->isClean()){
-            return redirect()->back()->with("sin_modificaciones","Debes cambiar al menos un valor");
+        if($this->productos->actualizarProducto($request,$producto)){
+            return redirect()->back()->with("exito","Se ha modificado exitosamente el producto");
+        }else{
+            return redirect()->back()->with("errors","Error al modificar el producto");
         }
-
-        $producto->save();
-
-        return redirect()->back()->with("exito","Se ha modificado exitosamente el producto");
+        
+        
     }
 
     /**
